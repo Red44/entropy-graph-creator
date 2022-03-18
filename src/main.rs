@@ -63,7 +63,7 @@ fn main() {
         let propability = *v;
         entropy+= propability * (1.0/propability).log2();
     }
-    entropy= -entropy;
+    entropy = entropy.abs();
     let mut props = Vec::with_capacity(propabilities.len());
      for (k,v) in propabilities.drain() {
         props.push(v);
