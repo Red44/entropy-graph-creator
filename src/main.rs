@@ -42,7 +42,8 @@ fn main() {
     for x in 0_u8..255{
         propabilities.insert(x,0.0);
     }
-    let file_name = std::env::args().next().unwrap();
+    let args: Vec<String> = std::env::args().collect();
+    let file_name = args.get(1).unwrap();
     let total_bytes  = std::fs::read(&file_name).unwrap();
     for ref byte in total_bytes {
         let count = byte_counter.get_mut(byte);
