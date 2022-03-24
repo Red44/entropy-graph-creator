@@ -1,9 +1,6 @@
-use std::fs;
-use std::ops::Mul;
 use poloto::prelude::*;
 
-fn render_frame(total_entropy : f64, propabilities : Vec<f64> ) -> String{
-
+fn render_frame(total_entropy: f64, propabilities: Vec<f64>) -> String {
     let it = (0..).zip(propabilities);
 
     let data = poloto::build::histogram("", it)
@@ -18,57 +15,51 @@ fn render_frame(total_entropy : f64, propabilities : Vec<f64> ) -> String{
         ytick,
         poloto::plot_fmt(
             "probability distribution",
-            format!("total entropie {}",total_entropy),
+            format!("total entropie {}", total_entropy),
             "probability",
             xtick_fmt.with_tick_fmt(|w, v| {
-                return  if v % 16 == 0{
-                     write!(w, "Byte {}", v)
-                }else {
-                    write!(w,"")
+                return if v % 16 == 0 {
+                    write!(w, "Byte {}", v)
+                } else {
+                    write!(w, "")
                 };
             }),
             ytick_fmt,
         ),
     );
 
-     format!("{}",poloto::disp(|w| pp.simple_theme(w)))
+    format!("{}", poloto::disp(|w| pp.simple_theme(w)))
 }
-
 
 fn main() {
     let mut entropy = 0.0;
-    let mut byte_counter = std::collections::HashMap::new();
-    let mut propabilities = std::collections::HashMap::<u8,f64>::new();
-    for x in 0_u8..255{
-        propabilities.insert(x,0.0);
-    }
+    let mut byte_counter = vec![0_u64; 256];
+    let mut probabilities = vec![0.0; 256];
     let args: Vec<String> = std::env::args().collect();
     let file_name = args.get(1).unwrap();
-    let total_bytes  = std::fs::read(&file_name).unwrap();
+    let total_bytes = std::fs::read(&file_name).unwrap();
+    let total_len = total_bytes.len() as f64;
     for ref byte in total_bytes {
-        let count = byte_counter.get_mut(byte);
-        match count {
-            Some(v) =>{
-                *v+=1;
-            }
-            None =>{
-                byte_counter.insert(*byte,1_u32);
-            }
-        }
+        *byte_counter.get_mut(*byte as usize).unwrap() += 1;
     }
-    for (k,v) in byte_counter.iter() {
-       propabilities.insert(*k, (*v as f64)/(byte_counter.len() as f64));
+    for (k, v) in byte_counter.iter().enumerate() {
+        probabilities[k] = (*v as f64) / total_len;
     }
-    for (k,v) in propabilities.iter() {
+    for v in probabilities.iter() {
         let propability = *v;
-        entropy+= propability * (1.0/propability).log2();
+        entropy += propability * (1.0 / propability).log2();
     }
     entropy = entropy.abs();
-    let mut props = Vec::with_capacity(propabilities.len());
-     for (k,v) in propabilities.drain() {
+    let mut props = Vec::with_capacity(probabilities.len());
+
+    for v in probabilities {
         props.push(v);
     }
-   std::fs::write(format!("{}_entropy.html",&file_name),render_frame(entropy,props));
-    println!("finished file written to {}" ,format!("{}_entropy.html",&file_name));
-}
 
+    std::fs::write(
+        format!("{}_entropy.html", &file_name),
+        render_frame(entropy, props),
+    )
+    .unwrap();
+    println!("finished file written to {}_entropy.html", &file_name);
+}
